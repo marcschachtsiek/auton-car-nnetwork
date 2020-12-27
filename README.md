@@ -1,1 +1,1 @@
-# auton-car-nnetwork
+# Autonomous RC Car Project - Neural Network Pipeline
