@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 
-def convert_raw_data(angles_file, images_folder):
+def convert_raw_data(angles_file, images_folder, output_file="output.csv", save=False):
     angels_df = pd.read_csv('../data/' + angles_file)
 
     arr = os.listdir('../data/' + images_folder)
@@ -32,7 +32,11 @@ def convert_raw_data(angles_file, images_folder):
     final_df = pd.DataFrame(columns=['filename', 'angle'])
     final_df['filename'] = image_df['filename']
     final_df['angle'] = angle_arr
-    print(final_df)
+
+    if save:
+        final_df.to_csv(output_file, index=False)
+
+    return final_df
 
 
 def read_image_timestamp(filename_array):
@@ -61,4 +65,4 @@ def read_image_timestamp(filename_array):
     return df
 
 
-convert_raw_data('angles.csv', 'images')
+convert_raw_data(angles_file='angles.csv', images_folder='images', output_file='matches.csv', save=True)
