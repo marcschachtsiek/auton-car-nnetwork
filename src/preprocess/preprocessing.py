@@ -1,11 +1,14 @@
 import pandas as pd
 import os
+from keras.preprocessing.image import ImageDataGenerator
 
 
-def convert_raw_data(angles_file, images_folder, output_file="output.csv", save=False):
-    angels_df = pd.read_csv('../data/' + angles_file)
+abs_path = "C:\\Development\\Smart Car Project\\auton-car-nnetwork\\"
 
-    arr = os.listdir('../data/' + images_folder)
+def convert_raw_data(angles_file, image_dir, output_file="output.csv", save=False):
+    angels_df = pd.read_csv(abs_path + 'data\\' + angles_file)
+
+    arr = os.listdir(abs_path + 'data\\' + image_dir)
     image_df = read_image_timestamp(arr)
 
     angle_arr = []
@@ -65,4 +68,18 @@ def read_image_timestamp(filename_array):
     return df
 
 
-convert_raw_data(angles_file='angles.csv', images_folder='images', output_file='matches.csv', save=True)
+def load_dataset_dataframe(csv_file):
+    return pd.read_csv(abs_path + 'src\\preprocess\\' + csv_file, )
+
+
+def get_dataset_generators_from_dataframe(dataframe, image_dir, x_label, y_label):
+    datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+    train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + "data\\" + image_dir, validate_filenames=False,
+                                                  x_col=x_label, y_col=y_label, class_mode="raw", seed=42, target_size=(240, 320),
+                                                  save_to_dir=abs_path + "data\\augmented", subset="training", save_format="jpg")
+
+    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + "data\\" + image_dir, validate_filenames=False,
+                                                  x_col=x_label, y_col=y_label, class_mode="raw", seed=42, target_size=(240, 320),
+                                                  save_to_dir=abs_path + "data\\augmented", subset="validation", save_format="jpg")
+
+    return train_generator, valid_generator
