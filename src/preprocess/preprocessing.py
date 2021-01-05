@@ -5,7 +5,7 @@ from keras.preprocessing.image import ImageDataGenerator
 
 abs_path = "C:\\Development\\Smart Car Project\\auton-car-nnetwork\\"
 
-def convert_raw_data(angles_file, image_dir, output_file="output.csv", save=False):
+def convert_raw_data(angles_file, image_dir, output_file="output", steering_offset=-9, save=False):
     angels_df = pd.read_csv(abs_path + 'data\\' + angles_file)
 
     arr = os.listdir(abs_path + 'data\\' + image_dir)
@@ -36,10 +36,16 @@ def convert_raw_data(angles_file, image_dir, output_file="output.csv", save=Fals
     final_df['filename'] = image_df['filename']
     final_df['angle'] = angle_arr
 
-    if save:
-        final_df.to_csv(output_file, index=False)
+    # Normalisation of data, takes into account steering offset
+    final_df['angle'] = final_df['angle'] - steering_offset
+    min = final_df['angle'].min()
+    max = final_df['angle'].max()
+    final_df['angle'] = (final_df['angle'] - min) / (max - min)
 
-    return final_df
+    if save:
+        final_df.to_csv(output_file + "-Mi" + str(min) + "-Ma" + str(max) + "-O" + str(steering_offset) + ".csv", index=False)
+
+    return final_df, min, max
 
 
 def read_image_timestamp(filename_array):
@@ -76,10 +82,13 @@ def get_dataset_generators_from_dataframe(dataframe, image_dir, x_label, y_label
     datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
     train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + "data\\" + image_dir, validate_filenames=False,
                                                   x_col=x_label, y_col=y_label, class_mode="raw", seed=42, target_size=(240, 320),
-                                                  save_to_dir=abs_path + "data\\augmented", subset="training", save_format="jpg")
+                                                  subset="training")
 
     valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + "data\\" + image_dir, validate_filenames=False,
                                                   x_col=x_label, y_col=y_label, class_mode="raw", seed=42, target_size=(240, 320),
-                                                  save_to_dir=abs_path + "data\\augmented", subset="validation", save_format="jpg")
+                                                  subset="validation")
 
     return train_generator, valid_generator
+
+
+convert_raw_data("angels.csv", "images", save=True)

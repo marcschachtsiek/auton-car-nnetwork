@@ -33,7 +33,10 @@ def fit_model(train_gen, valid_gen):
     STEP_SIZE_VALID = valid_gen.n//valid_gen.batch_size
 
     history = model.fit(x=train_gen, steps_per_epoch=STEP_SIZE_TRAIN,
-                        validation_data=valid_gen, validation_steps=STEP_SIZE_VALID, epochs=10)
+                        validation_data=valid_gen, validation_steps=STEP_SIZE_VALID, epochs=3)
+
+    model.save("model.h5")
+    print("Model saved.")
 
     # Plot history: MSE -- from https://www.machinecurve.com/index.php/2019/10/08/how-to-visualize-the-training-process-in-keras/#visualizing-the-mse
     plt.plot(history.history['mse'], label='MSE (training data)')
@@ -45,6 +48,6 @@ def fit_model(train_gen, valid_gen):
     plt.show()
 
 
-df = prep.load_dataset_dataframe("matches.csv")
+df = prep.load_dataset_dataframe("output-Mi30-Ma150-O-9.csv")
 train_gen, valid_gen = prep.get_dataset_generators_from_dataframe(df, "images", "filename", "angle")
 fit_model(train_gen, valid_gen)
