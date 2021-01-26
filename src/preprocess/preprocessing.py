@@ -1,15 +1,15 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import pandas as pd
-from keras.preprocessing.image import ImageDataGenerator
+import numpy as np
+
+abs_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
 
-abs_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\"
+def convert_raw_data(angles_file, image_dir="frames", output_file="output", steering_offset=-9, save=False):
+    angels_df = pd.read_csv(abs_path + angles_file)
 
-def convert_raw_data(angles_file, image_dir, output_file="output", steering_offset=-9, save=False):
-    angels_df = pd.read_csv(abs_path + 'data\\' + angles_file)
-
-    arr = os.listdir(abs_path + 'data\\' + image_dir)
+    arr = os.listdir(abs_path + image_dir)
     image_df = read_image_timestamp(arr)
 
     angle_arr = []
@@ -41,10 +41,19 @@ def convert_raw_data(angles_file, image_dir, output_file="output", steering_offs
     final_df['angle'] = final_df['angle'] - steering_offset
     min = final_df['angle'].min()
     max = final_df['angle'].max()
-    final_df['angle'] = ((final_df['angle'] - min) / (max - min)) - 0.5
+    final_df['angle'] = (((final_df['angle'] - min) / (max - min)) - 0.5) * 2
+
+    final_df['angle'] = final_df['angle'].round(decimals=3)
+
+    # print(final_df.describe())
+
+    zero_entries = final_df[final_df['angle'] == 0.0].index.tolist()
+    print(int(len(zero_entries)*0.8))
+    drop_ind = np.random.choice(zero_entries, size=int(len(zero_entries)*0.8))
+    final_df = final_df.drop(drop_ind)
 
     if save:
-        final_df.to_csv(output_file + "-Mi" + str(min) + "-Ma" + str(max) + "-O" + str(steering_offset) + ".csv", index=False)
+        final_df.to_csv(abs_path + output_file + "-Mi" + str(min) + "-Ma" + str(max) + "-O" + str(steering_offset) + ".csv", index=False)
 
     return final_df, min, max
 
@@ -75,21 +84,4 @@ def read_image_timestamp(filename_array):
     return df
 
 
-def load_dataset_dataframe(csv_file):
-    return pd.read_csv(abs_path + 'src\\preprocess\\' + csv_file)
-
-
-def get_dataset_generators_from_dataframe(dataframe, image_dir, x_label, y_label):
-    datagen = ImageDataGenerator(validation_split=0.2)
-    train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + "data\\" + image_dir, validate_filenames=False,
-                                                  x_col=x_label, y_col=y_label, class_mode="raw", seed=42, target_size=(240, 320),
-                                                  subset="training")
-
-    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + "data\\" + image_dir, validate_filenames=False,
-                                                  x_col=x_label, y_col=y_label, class_mode="raw", seed=42, target_size=(240, 320),
-                                                  subset="validation")
-
-    return train_generator, valid_generator
-
-
-convert_raw_data("angels.csv", "images", save=True)
+convert_raw_data("angels.csv", save=True)
