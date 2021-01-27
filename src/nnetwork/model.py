@@ -1,11 +1,11 @@
 import os
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+
 import keras
-import tensorflow as tf
 from tensorflow.python.keras.layers import Resizing
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Cropping2D, Lambda
+from keras.callbacks import ModelCheckpoint
 from keras.losses import MeanSquaredError
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
@@ -13,42 +13,39 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator
 
-abs_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
+data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
 
-def load_data(csv_file, image_dir="frames", x_label="filename", y_label="angle"):
-    dataframe = pd.read_csv(abs_path + csv_file)
+def load_data(csv_file, image_dir="frames"):
+    dataframe = pd.read_csv(data_path + csv_file)
 
     print(dataframe['angle'].nunique())
 
-    dataframe.hist(column=['angle'])
-    plt.show()
-
     datagen = ImageDataGenerator(validation_split=0.2)
-    train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + image_dir,
-                                                  validate_filenames=False, x_col=x_label, y_col=y_label, class_mode="raw",
+    train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
+                                                  validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
                                                   seed=42, target_size=(240, 320), subset="training", batch_size=32)
 
-    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=abs_path + image_dir,
-                                                  validate_filenames=False, x_col=x_label, y_col=y_label, class_mode="raw",
+    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
+                                                  validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
                                                   seed=42, target_size=(240, 320), subset="validation", batch_size=32)
 
     return train_generator, valid_generator
 
 
-def model_jnet():
+def model_jnet(crop_top, crop_bottom):
     model = Sequential()
-    model.add(Cropping2D(cropping=((0, 100), (0, 0)), input_shape=(240, 320, 3)))
+    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (0, 0)), input_shape=(240, 320, 3)))
     model.add(Resizing(height=65, width=320))
     model.add(Lambda(lambda x: x/255.0 - 0.5))
 
-    model.add(Conv2D(16, (5, 5), padding='valid', activation='relu'))
+    model.add(Conv2D(16, (5, 5), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(Conv2D(32, (5, 5), padding='valid', activation='relu'))
+    model.add(Conv2D(32, (5, 5), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(Conv2D(64, (5, 5), padding='valid', activation='relu'))
+    model.add(Conv2D(64, (5, 5), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     # model.add(Dropout(0.25))
@@ -57,52 +54,109 @@ def model_jnet():
     model.add(Dense(10, activation="relu"))
     model.add(Dense(1))
 
-    model.compile(optimizer=Adam(lr=0.001), loss=MeanSquaredError())
     return model
 
 
-def fit_model(train_gen, valid_gen):
+def model_shallow(crop_top, crop_bottom):
+    model = Sequential()
+    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (0, 0)), input_shape=(240, 320, 3)))
+    model.add(Resizing(height=65, width=320))
+    model.add(Lambda(lambda x: x/255.0 - 0.5))
 
-    model = model_jnet()
+    model.add(Conv2D(16, (2, 2), activation='relu'))
+
+    model.add(Flatten())
+    model.add(Dense(1))
+
+    return model
+
+
+def model_alexnet(crop_top, crop_bottom):
+    model = Sequential()
+    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (0, 0)), input_shape=(240, 320, 3)))
+    model.add(Resizing(height=65, width=320))
+    model.add(Lambda(lambda x: x/255.0 - 0.5))
+
+    model.add(Conv2D(96, (11, 11), activation='relu'))
+    model.add(Conv2D(256, (5, 5), activation='relu'))
+    model.add(Conv2D(384, (3, 3), activation='relu'))
+    model.add(Conv2D(384, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(256, (3, 3), activation='relu'))
+
+    model.add(Flatten())
+    model.add(Dense(4096, activation="relu"))
+    model.add(Dense(1000, activation="relu"))
+    model.add(Dense(1))
+    return model
+
+
+def model_pilotnet(crop_top, crop_bottom):
+
+    model = Sequential()
+    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (0, 0)), input_shape=(240, 320, 3)))
+    model.add(Resizing(height=65, width=320))
+    model.add(Lambda(lambda x: x/255.0 - 0.5))
+
+    model.add(Conv2D(24, (5, 5), activation='elu', strides=(2, 2)))
+    model.add(Conv2D(36, (5, 5), activation='elu', strides=(2, 2)))
+    model.add(Conv2D(48, (3, 3), activation='elu', strides=(2, 2)))
+    model.add(Conv2D(64, (3, 3), activation='elu'))
+    model.add(Conv2D(64, (3, 3), activation='elu'))
+    model.add(Flatten())
+    model.add(Dense(100, activation='elu'))
+    model.add(Dense(50, activation='elu'))
+    model.add(Dense(10, activation='elu'))
+    model.add(Dense(1))
+    model.summary()
+
+    return model
+
+
+def fit_model(train_gen, valid_gen, model, folder, history_filename='history.csv', epochs=20):
+
+    model.compile(optimizer=Adam(lr=0.001), loss=MeanSquaredError(), metrics=['accuracy'])
     print(model.summary())
 
-    STEP_SIZE_TRAIN = train_gen.n // train_gen.batch_size
-    STEP_SIZE_VALID = valid_gen.n // valid_gen.batch_size
+    checkpoint = ModelCheckpoint(data_path + folder + 'model-{epoch:03d}-{val_loss:.3f}.h5',
+                                 monitor='val_loss',
+                                 verbose=0,
+                                 save_best_only=True,
+                                 mode='auto')
 
-    history = model.fit(x=train_gen, steps_per_epoch=STEP_SIZE_TRAIN,
-                        validation_data=valid_gen, validation_steps=STEP_SIZE_VALID, epochs=20)
+    step_size_train = train_gen.n // train_gen.batch_size
+    step_size_valid = valid_gen.n // valid_gen.batch_size
 
-    model.save(abs_path + "model.h5")
-    print("Model saved.")
+    history = model.fit(x=train_gen, steps_per_epoch=step_size_train, callbacks=[checkpoint],
+                        validation_data=valid_gen, validation_steps=step_size_valid, epochs=epochs)
 
-    return history
+    df = pd.DataFrame(history.history)
+    df.to_csv(data_path + folder + history_filename, index=False)
 
 
-def evaluate_model(filename, valid_gen, history):
-    model = keras.models.load_model(abs_path + filename)
-    y_pred = model.predict(valid_gen)
+def plot_training(filename, hist=None):
+    if not hist:
+        hist = pd.read_csv(data_path + filename)
 
-    # Plot history: MSE -- from https://www.machinecurve.com/index.php/2019/10/08/how-to-visualize-the-training-process-in-keras/#visualizing-the-mse
-    plt.plot(history.history['val_loss'], label='MSE (validation data)')
-    plt.plot(history.history['loss'], label='MSE (training data)')
+    # Plot history: MSE -- from https://www.machinecurve.com/index.php/2019/10/08/how-to-visualize-the-training
+    # -process-in-keras/#visualizing-the-mse
+    plt.plot(hist['val_loss'], label='MSE (validation data)')
+    plt.plot(hist['loss'], label='MSE (training data)')
     plt.title('MSE for Steering Angle Prediction')
     plt.ylabel('MSE value')
     plt.xlabel('No. epoch')
     plt.legend(loc="upper right")
     plt.show()
 
+
+def evaluate_model(filename, valid_generator):
+    model = keras.models.load_model(data_path + filename)
+    y_pred = model.predict(valid_generator)
+
     plt.plot([a_tuple[0] for a_tuple in y_pred], label='Predicted')
-    plt.plot(valid_gen.labels, label='Measured')
+    plt.plot(valid_generator.labels, label='Measured')
     plt.title('Predicted and measured steering angle values')
     plt.ylabel('Normalised Steering Angle Value')
     plt.xlabel('')
     plt.legend(loc="upper right")
     plt.show()
-
-
-physical_devices = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
-train_gen, valid_gen = load_data("output-Mi30-Ma150-O-9 - aug.csv")
-history = fit_model(train_gen, valid_gen)
-evaluate_model("model.h5", valid_gen, history)

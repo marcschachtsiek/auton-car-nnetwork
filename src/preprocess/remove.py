@@ -1,18 +1,22 @@
 import os
 import glob
 
-files = glob.glob("C:/Dev/Smart Car Project/auton-car-nnetwork/data/frames/m-*")
+data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
-for f in files:
-    try:
-        os.remove(f)
-    except OSError as e:
-        print("Error: %s : %s" % (f, e.strerror))
 
-files2 = glob.glob("C:/Dev/Smart Car Project/auton-car-nnetwork/data/output-*")
+def remove():
+    files = glob.glob(data_path + "\\frames\\m-*")
 
-for f2 in files2:
-    try:
-        os.remove(f2)
-    except OSError as e:
-        print("Error: %s : %s" % (f2, e.strerror))
+    for f in files:
+        try:
+            os.remove(f)
+        except OSError as e:
+            print("Error: %s : %s" % (f, e.strerror))
+
+    files2 = glob.glob(data_path + "\\output-*")
+
+    for f2 in files2:
+        try:
+            os.remove(f2)
+        except OSError as e:
+            print("Error: %s : %s" % (f2, e.strerror))
