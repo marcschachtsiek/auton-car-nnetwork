@@ -70,6 +70,3 @@ def read_images(filename_array):
     df['microsec'] = usec_array
 
     return df
-
-
-convert_raw_data("angels.csv", save=True)

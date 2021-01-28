@@ -23,6 +23,3 @@ def mirror_images(csv_file, out_filename):
     result = pd.concat([dataframe, data_frame])
 
     result.to_csv(data_path + out_filename, index=False)
-
-
-mirror_images("output-Mi30-Ma150-O-9.csv", "output-Mi30-Ma150-O-9 - aug.csv")

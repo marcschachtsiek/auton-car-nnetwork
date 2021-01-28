@@ -1,8 +1,12 @@
 import os
+
+from numpy import expand_dims
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 import keras
 from tensorflow.python.keras.layers import Resizing
+from keras import Model
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Cropping2D, Lambda
 from keras.callbacks import ModelCheckpoint
@@ -11,24 +15,24 @@ from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
 import pandas as pd
-from keras.preprocessing.image import ImageDataGenerator
+from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 
 data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
 
-def load_data(csv_file, image_dir="frames"):
+def load_data(csv_file, image_dir="frames", batch_size=32, seed=42):
     dataframe = pd.read_csv(data_path + csv_file)
 
-    print(dataframe['angle'].nunique())
+    dataframe = dataframe.sample(frac=1).reset_index(drop=True)
 
     datagen = ImageDataGenerator(validation_split=0.2)
     train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
                                                   validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
-                                                  seed=42, target_size=(240, 320), subset="training", batch_size=32)
+                                                  seed=seed, target_size=(240, 320), subset="training", batch_size=batch_size)
 
     valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
                                                   validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
-                                                  seed=42, target_size=(240, 320), subset="validation", batch_size=32)
+                                                  seed=seed, target_size=(240, 320), subset="validation", batch_size=batch_size)
 
     return train_generator, valid_generator
 
@@ -88,6 +92,7 @@ def model_alexnet(crop_top, crop_bottom):
     model.add(Dense(4096, activation="relu"))
     model.add(Dense(1000, activation="relu"))
     model.add(Dense(1))
+
     return model
 
 
@@ -108,14 +113,13 @@ def model_pilotnet(crop_top, crop_bottom):
     model.add(Dense(50, activation='elu'))
     model.add(Dense(10, activation='elu'))
     model.add(Dense(1))
-    model.summary()
 
     return model
 
 
-def fit_model(train_gen, valid_gen, model, folder, history_filename='history.csv', epochs=20):
+def fit_model(train_gen, valid_gen, model, folder, history_filename='history.csv', epochs=20, lr=0.001):
 
-    model.compile(optimizer=Adam(lr=0.001), loss=MeanSquaredError(), metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=lr), loss=MeanSquaredError(), metrics=['accuracy'])
     print(model.summary())
 
     checkpoint = ModelCheckpoint(data_path + folder + 'model-{epoch:03d}-{val_loss:.3f}.h5',
@@ -132,6 +136,43 @@ def fit_model(train_gen, valid_gen, model, folder, history_filename='history.csv
 
     df = pd.DataFrame(history.history)
     df.to_csv(data_path + folder + history_filename, index=False)
+
+
+def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes):
+    model = keras.models.load_model(data_path + folder + model_file)
+
+    # https://machinelearningmastery.com/how-to-visualize-filters-and-feature-maps-in-convolutional-neural-networks/
+    outputs = [model.layers[i].output for i in ixs]
+    model = Model(inputs=model.inputs, outputs=outputs)
+
+    img = load_img(data_path + img_filename)
+    img = img_to_array(img)
+    img = expand_dims(img, axis=0)
+
+    feature_maps = model.predict(img)
+
+    for index, fmap in enumerate(feature_maps):
+
+        rows, cols = plot_sq[index][0], plot_sq[index][1]
+
+        fig, axs = plt.subplots(nrows=rows, ncols=cols, figsize=figsizes[index],
+                                gridspec_kw={'hspace': 0, 'wspace': 0}, squeeze=False)
+
+        ix = 1
+        for x in range(rows):
+            for y in range(cols):
+
+                for spine in axs[x, y].spines.values():
+                    spine.set_edgecolor('blue')
+
+                axs[x, y].set_xticks([])
+                axs[x, y].set_yticks([])
+                axs[x, y].imshow(fmap[0, :, :, ix - 1], cmap='gray')
+                ix += 1
+        plt.grid()
+        plt.savefig(data_path + folder + "\\figure-layer" + str(ixs[index]) + ".png")
+        plt.show()
+
 
 
 def plot_training(filename, hist=None):
