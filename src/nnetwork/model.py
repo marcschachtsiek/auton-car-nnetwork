@@ -14,6 +14,7 @@ from keras.losses import MeanSquaredError
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
+import numpy as np
 import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 
@@ -190,12 +191,25 @@ def plot_training(filename, hist=None):
     plt.show()
 
 
-def evaluate_model(filename, valid_generator):
+def evaluate_model(filename, csv_file, batch_size=32, seed=42):
+    dataframe = pd.read_csv(data_path + csv_file)
+
+    datagen = ImageDataGenerator(validation_split=0.05)
+    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + "frames",
+                                                  validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
+                                                  seed=seed, target_size=(240, 320), subset="validation", batch_size=batch_size)
+
     model = keras.models.load_model(data_path + filename)
     y_pred = model.predict(valid_generator)
 
-    plt.plot([a_tuple[0] for a_tuple in y_pred], label='Predicted')
-    plt.plot(valid_generator.labels, label='Measured')
+    y_pred_a = [a_tuple[0] for a_tuple in y_pred]
+    labels = [label for label in valid_generator.labels]
+
+    mse = (np.square(np.array(y_pred_a), np.array(labels))).mean(axis=None)
+    print("MSE: " + str(mse))
+
+    plt.plot(y_pred_a, label='Predicted')
+    plt.plot(labels, label='Measured')
     plt.title('Predicted and measured steering angle values')
     plt.ylabel('Normalised Steering Angle Value')
     plt.xlabel('')
