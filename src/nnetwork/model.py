@@ -21,10 +21,11 @@ from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
 
-def load_data(csv_file, image_dir="frames", batch_size=32, seed=42):
+def load_data(csv_file, image_dir="frames", shuffle=False, batch_size=32, seed=42):
     dataframe = pd.read_csv(data_path + csv_file)
 
-    dataframe = dataframe.sample(frac=1).reset_index(drop=True)
+    if shuffle:
+        dataframe = dataframe.sample(frac=1).reset_index(drop=True)
 
     datagen = ImageDataGenerator(validation_split=0.2)
     train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
@@ -194,7 +195,9 @@ def plot_training(filename, hist=None):
 def evaluate_model(filename, csv_file, batch_size=32, seed=42):
     dataframe = pd.read_csv(data_path + csv_file)
 
-    datagen = ImageDataGenerator(validation_split=0.05)
+    # dataframe = dataframe.sample(frac=1).reset_index(drop=True)
+
+    datagen = ImageDataGenerator(validation_split=0.01)
     valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + "frames",
                                                   validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
                                                   seed=seed, target_size=(240, 320), subset="validation", batch_size=batch_size)
