@@ -14,7 +14,6 @@ from keras.losses import MeanSquaredError
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
-import numpy as np
 import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 
@@ -29,12 +28,14 @@ def load_data(csv_file, image_dir="frames", pre_shuffle=False, batch_size=32, se
 
     datagen = ImageDataGenerator(validation_split=0.2)
     train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
-                                                  validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
-                                                  seed=seed, target_size=(240, 320), subset="training", batch_size=batch_size)
+                                                  validate_filenames=False, x_col='filename', y_col='angle',
+                                                  class_mode="raw", seed=seed, target_size=(240, 320),
+                                                  subset="training", batch_size=batch_size)
 
     valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
-                                                  validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
-                                                  seed=seed, target_size=(240, 320), subset="validation", batch_size=batch_size)
+                                                  validate_filenames=False, x_col='filename', y_col='angle',
+                                                  class_mode="raw", seed=seed, target_size=(240, 320),
+                                                  subset="validation", batch_size=batch_size)
 
     return train_generator, valid_generator
 

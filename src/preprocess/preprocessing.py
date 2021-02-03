@@ -15,14 +15,15 @@ def convert_raw_data(angles_file, output_file='output', steering_offset=-9, save
     def match_angle(row):
 
         hour = int(row['hour'])
-        min = int(row['minute'])
+        minu = int(row['minute'])
         sec = int(row['second'])
         usec = int(row['microsec'])
 
         match = angels_df[(angels_df['hour'] < hour) |
-                          (angels_df['hour'] == hour) & (angels_df['minute'] < min) |
-                          (angels_df['hour'] == hour) & (angels_df['minute'] == min) & (angels_df['second'] < sec) |
-                          (angels_df['hour'] == hour) & (angels_df['minute'] == min) & (angels_df['second'] == sec) & (angels_df['microsec'] <= usec)]
+                          (angels_df['hour'] == hour) & (angels_df['minute'] < minu) |
+                          (angels_df['hour'] == hour) & (angels_df['minute'] == minu) & (angels_df['second'] < sec) |
+                          (angels_df['hour'] == hour) & (angels_df['minute'] == minu) & (angels_df['second'] == sec) &
+                          (angels_df['microsec'] <= usec)]
 
         if not match.empty:
             angle_arr.append(match['angle'].iloc[-1])
