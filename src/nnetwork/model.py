@@ -21,10 +21,10 @@ from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
 
-def load_data(csv_file, image_dir="frames", shuffle=False, batch_size=32, seed=42):
+def load_data(csv_file, image_dir="frames", pre_shuffle=False, batch_size=32, seed=42):
     dataframe = pd.read_csv(data_path + csv_file)
 
-    if shuffle:
+    if pre_shuffle:
         dataframe = dataframe.sample(frac=1).reset_index(drop=True)
 
     datagen = ImageDataGenerator(validation_split=0.2)
@@ -176,8 +176,7 @@ def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes):
         plt.show()
 
 
-
-def plot_training(filename, hist=None):
+def plot_training(filename, out_filename='history.png', hist=None):
     if not hist:
         hist = pd.read_csv(data_path + filename)
 
@@ -189,27 +188,26 @@ def plot_training(filename, hist=None):
     plt.ylabel('MSE value')
     plt.xlabel('No. epoch')
     plt.legend(loc="upper right")
+    plt.savefig(data_path + out_filename)
     plt.show()
 
 
-def evaluate_model(filename, csv_file, batch_size=32, seed=42):
+def evaluate_model(folder, filename, csv_file, out_filename='predictions.png', batch_size=32, seed=42):
     dataframe = pd.read_csv(data_path + csv_file)
 
     # dataframe = dataframe.sample(frac=1).reset_index(drop=True)
 
     datagen = ImageDataGenerator(validation_split=0.01)
     valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + "frames",
-                                                  validate_filenames=False, x_col='filename', y_col='angle', class_mode="raw",
-                                                  seed=seed, target_size=(240, 320), subset="validation", batch_size=batch_size)
+                                                  validate_filenames=False, x_col='filename', y_col='angle',
+                                                  class_mode="raw", seed=seed, target_size=(240, 320),
+                                                  subset="validation", batch_size=batch_size, shuffle=False)
 
-    model = keras.models.load_model(data_path + filename)
+    model = keras.models.load_model(data_path + folder + filename)
     y_pred = model.predict(valid_generator)
 
     y_pred_a = [a_tuple[0] for a_tuple in y_pred]
     labels = [label for label in valid_generator.labels]
-
-    mse = (np.square(np.array(y_pred_a), np.array(labels))).mean(axis=None)
-    print("MSE: " + str(mse))
 
     plt.plot(y_pred_a, label='Predicted')
     plt.plot(labels, label='Measured')
@@ -217,4 +215,5 @@ def evaluate_model(filename, csv_file, batch_size=32, seed=42):
     plt.ylabel('Normalised Steering Angle Value')
     plt.xlabel('')
     plt.legend(loc="upper right")
+    plt.savefig(data_path + folder + out_filename, dpi=1200)
     plt.show()
