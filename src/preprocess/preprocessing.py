@@ -1,10 +1,8 @@
 import os
 import pandas as pd
 
-abs_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
-
-def convert_raw_data(angles_file, output_file='output', steering_offset=-9, save=False):
+def convert_raw_data(angles_file, abs_path, output_file='output', steering_offset=-9, save=False):
     angels_df = pd.read_csv(abs_path + angles_file)
 
     arr = os.listdir(abs_path + 'frames')

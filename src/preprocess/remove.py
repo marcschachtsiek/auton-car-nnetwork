@@ -1,10 +1,8 @@
 import os
 import glob
 
-data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
-
-def remove():
+def remove(data_path):
     files = glob.glob(data_path + "\\frames\\m-*")
 
     for f in files:

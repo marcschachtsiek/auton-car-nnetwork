@@ -1,10 +1,8 @@
 import pandas as pd
 import cv2
 
-data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
-
-def mirror_images(csv_file, out_filename):
+def mirror_images(csv_file, out_filename, data_path):
     dataframe = pd.read_csv(data_path + csv_file)
     data = []
 

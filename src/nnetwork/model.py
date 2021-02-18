@@ -17,10 +17,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 
-data_path = "C:\\Dev\\Smart Car Project\\auton-car-nnetwork\\data\\"
 
-
-def load_data(csv_file, image_dir="frames", pre_shuffle=False, batch_size=32, seed=42):
+def load_data(csv_file, data_path, image_dir="frames", pre_shuffle=False, batch_size=32, seed=42):
     dataframe = pd.read_csv(data_path + csv_file)
 
     if pre_shuffle:
@@ -40,9 +38,9 @@ def load_data(csv_file, image_dir="frames", pre_shuffle=False, batch_size=32, se
     return train_generator, valid_generator
 
 
-def model_jnet(crop_top, crop_bottom):
+def model_jnet(crop_top, crop_bottom, crop_left, crop_right):
     model = Sequential()
-    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (0, 0)), input_shape=(240, 320, 3)))
+    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (crop_left, crop_right)), input_shape=(240, 320, 3)))
     model.add(Resizing(height=65, width=320))
     model.add(Lambda(lambda x: x/255.0 - 0.5))
 
@@ -120,7 +118,7 @@ def model_pilotnet(crop_top, crop_bottom):
     return model
 
 
-def fit_model(train_gen, valid_gen, model, folder, history_filename='history.csv', epochs=20, lr=0.001):
+def fit_model(train_gen, valid_gen, model, folder, data_path, history_filename='history.csv', epochs=20, lr=0.001):
 
     model.compile(optimizer=Adam(lr=lr), loss=MeanSquaredError(), metrics=['accuracy'])
     print(model.summary())
@@ -141,7 +139,7 @@ def fit_model(train_gen, valid_gen, model, folder, history_filename='history.csv
     df.to_csv(data_path + folder + history_filename, index=False)
 
 
-def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes):
+def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes, data_path):
     model = keras.models.load_model(data_path + folder + model_file)
 
     # https://machinelearningmastery.com/how-to-visualize-filters-and-feature-maps-in-convolutional-neural-networks/
@@ -177,7 +175,7 @@ def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes):
         plt.show()
 
 
-def plot_training(filename, out_filename='history.png', hist=None):
+def plot_training(filename, data_path, out_filename='history.png', hist=None):
     if not hist:
         hist = pd.read_csv(data_path + filename)
 
@@ -193,7 +191,7 @@ def plot_training(filename, out_filename='history.png', hist=None):
     plt.show()
 
 
-def evaluate_model(folder, filename, csv_file, out_filename='predictions.png', batch_size=32, seed=42):
+def evaluate_model(folder, filename, csv_file, data_path, out_filename='predictions.png', batch_size=32, seed=42):
     dataframe = pd.read_csv(data_path + csv_file)
 
     # dataframe = dataframe.sample(frac=1).reset_index(drop=True)
