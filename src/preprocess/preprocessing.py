@@ -69,3 +69,6 @@ def read_images(filename_array):
     df['microsec'] = usec_array
 
     return df
+
+
+# def generate_mixed(csv_file, folders, ratio, new_folder):
