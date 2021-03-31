@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
+import tensorflow as tf
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
@@ -35,15 +36,15 @@ def load_data(csv_file, data_path, image_dir="frames", pre_shuffle=False, shuffl
     valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=data_path + image_dir,
                                                   validate_filenames=False, x_col='filename', y_col='angle',
                                                   class_mode="raw", seed=seed, target_size=target_size,
-                                                  subset="validation", batch_size=batch_size, shuffle=shuffle)
+                                                  subset="validation", batch_size=batch_size, shuffle=True)
 
     return train_generator, valid_generator
 
 
-def model_jnet(crop_top, crop_bottom, crop_left, crop_right):
+def model_jnet(crop_top, crop_bottom, crop_left, crop_right, input_shape):
     model = Sequential()
-    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (crop_left, crop_right)), input_shape=(240, 320, 3)))
-    model.add(Resizing(height=65, width=320))
+
+    model.add(Cropping2D(cropping=((crop_top, crop_bottom), (crop_left, crop_right)), input_shape=input_shape))
     model.add(Lambda(lambda x: x / 255.0 - 0.5))
 
     model.add(Conv2D(16, (5, 5), activation='relu'))
@@ -54,8 +55,6 @@ def model_jnet(crop_top, crop_bottom, crop_left, crop_right):
 
     model.add(Conv2D(64, (5, 5), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    # model.add(Dropout(0.25))
 
     model.add(Flatten())
     model.add(Dense(10, activation="relu"))
@@ -105,7 +104,7 @@ def compile_model(model, lr):
 
 
 def fit_model(model, train_gen, valid_gen, data_path, history_filename='history.csv', epochs=20, max_queue_size=10,
-              workers=1, model_format=''):
+              workers=1, model_format='', verbose=0):
 
     checkpoint = ModelCheckpoint(data_path + "\\" + 'model-{epoch:03d}-{val_loss:.3f}' + model_format,
                                  monitor='val_loss', verbose=0, save_best_only=True, mode='auto')
@@ -115,7 +114,7 @@ def fit_model(model, train_gen, valid_gen, data_path, history_filename='history.
 
     history = model.fit(x=train_gen, steps_per_epoch=step_size_train, callbacks=[checkpoint],
                         validation_data=valid_gen, validation_steps=step_size_valid, epochs=epochs,
-                        max_queue_size=max_queue_size, workers=workers)
+                        max_queue_size=max_queue_size, workers=workers, verbose=verbose)
 
     df = pd.DataFrame(history.history)
     df.to_csv(data_path + "\\" + history_filename, index=False)
@@ -161,7 +160,7 @@ def load_history(path, filename="history.csv"):
     return pd.read_csv(path + "\\" + filename)
 
 
-def plot_history(history, out_path, out_filename='history.png', figsize=(5, 3), linewidth=1):
+def plot_history(history, out_path, out_filename='history.png', figsize=(5, 3), linewidth=1, ylim=None):
 
     # Plot history: MSE -- from https://www.machinecurve.com/index.php/2019/10/08/how-to-visualize-the-training
     # -process-in-keras/#visualizing-the-mse
@@ -172,6 +171,10 @@ def plot_history(history, out_path, out_filename='history.png', figsize=(5, 3), 
     plt.ylabel('MSE value')
     plt.xlabel('No. epoch')
     plt.legend(loc="upper right", fontsize='small')
+
+    if ylim is not None:
+        plt.ylim(0, ylim)
+
     plt.savefig(out_path + "\\" + out_filename, dpi=1200, bbox_inches="tight")
     plt.show()
 
@@ -197,8 +200,9 @@ def get_predictions(model, sample_path, csv_file, target_size, percentage=0.01, 
 
     y_pred_a = [a_tuple[0] for a_tuple in y_pred]
     labels = [label for label in valid_generator.labels]
+    filenames = [filename for filename in valid_generator.filenames]
 
-    return y_pred_a, labels
+    return y_pred_a, labels, filenames
 
 
 def plot_predictions(preds_list, plot_labels, labels, out_path, out_filename='predictions.png', figsize=(5, 3),
@@ -243,3 +247,13 @@ def plot_mse(preds_list, labels, x_vals, extra_vals, extra_txt, out_path, out_fi
     plt.legend(loc="center left", fontsize=fontsize)
     plt.savefig(out_path + "\\" + out_filename, dpi=1200, bbox_inches="tight")
     plt.show()
+
+
+def convert_to_tflite(path, filename):
+    model = load_model(path, filename)
+    converter = tf.lite.TFLiteConverter.from_keras_model(model)
+    tflite_model = converter.convert()
+
+    # Save the model.
+    with open(path + filename + '.tflite', 'wb') as f:
+        f.write(tflite_model)
