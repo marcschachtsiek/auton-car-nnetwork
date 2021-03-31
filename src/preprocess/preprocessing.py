@@ -2,11 +2,24 @@ import os
 import pandas as pd
 
 
-def convert_raw_data(angles_file, abs_path, output_file='output', steering_offset=-9, save=False):
-    angels_df = pd.read_csv(abs_path + angles_file)
+def create_dataset(dataset, angles_file, steering_offset=-9, min_angle=30, max_angle=120):
+    """
+    create_dataset(angles_file[, steering_offset, min_angle, max_angle]) -> dataframe
+    .   @brief Creates a dataset definition from raw recorded steering angle and image data with timestamps.
+    .
+    .   The create_dataset() function generates the dataset definition dataframe and returns it. It reads the original
+    .   angles file, performs timestamp matching of recorded frames and steering angles and noramlises the angle data.
+    .
+    .   @param dataset Folder name of dataset.
+    .   @param angles_file Filename of the file containing the angles and timestamps.
+    .   @param output_file Output filename for the dataset definition CSV file.
+    .   @param steering_offset Steering offset of the recorded dataset.
+    .   @param min_angle Minimum steering angle, used for normalisation.
+    .   @param max_angle Maximum steering angle, used for normalisation
+    """
 
-    arr = os.listdir(abs_path + 'frames')
-    image_df = read_images(arr)
+    angels_df = pd.read_csv(dataset + "\\" + angles_file)
+    image_df = read_images(os.listdir(dataset + "\\frames"))
 
     angle_arr = []
 
@@ -36,16 +49,11 @@ def convert_raw_data(angles_file, abs_path, output_file='output', steering_offse
 
     # Normalisation of data, takes into account steering offset
     final_df['angle'] = final_df['angle'] - steering_offset
-    min_val = final_df['angle'].min()
-    max_val = final_df['angle'].max()
-    final_df['angle'] = (((final_df['angle'] - min_val) / (max_val - min_val)) - 0.5) * 2
+    final_df['angle'] = (((final_df['angle'] - min_angle) / (max_angle - min_angle)) - 0.5) * 2
 
     final_df['angle'] = final_df['angle'].round(decimals=5)
 
-    if save:
-        final_df.to_csv(abs_path + output_file + ".csv", index=False)
-
-    return final_df, min_val, max_val
+    return final_df
 
 
 def read_images(filename_array):
@@ -69,6 +77,3 @@ def read_images(filename_array):
     df['microsec'] = usec_array
 
     return df
-
-
-# def generate_mixed(csv_file, folders, ratio, new_folder):
