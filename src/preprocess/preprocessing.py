@@ -10,12 +10,12 @@ def create_dataset(dataset, angles_file, steering_offset=-9, min_angle=30, max_a
     .   The create_dataset() function generates the dataset definition dataframe and returns it. It reads the original
     .   angles file, performs timestamp matching of recorded frames and steering angles and noramlises the angle data.
     .
-    .   @param dataset Folder name of dataset.
-    .   @param angles_file Filename of the file containing the angles and timestamps.
-    .   @param output_file Output filename for the dataset definition CSV file.
-    .   @param steering_offset Steering offset of the recorded dataset.
-    .   @param min_angle Minimum steering angle, used for normalisation.
-    .   @param max_angle Maximum steering angle, used for normalisation
+    .   @param dataset          Folder name of dataset.
+    .   @param angles_file      Filename of the file containing the angles and timestamps.
+    .   @param output_file      Output filename for the dataset definition CSV file.
+    .   @param steering_offset  Steering offset of the recorded dataset.
+    .   @param min_angle        Minimum steering angle, used for normalisation.
+    .   @param max_angle        Maximum steering angle, used for normalisation
     """
 
     angels_df = pd.read_csv(dataset + "\\" + angles_file)

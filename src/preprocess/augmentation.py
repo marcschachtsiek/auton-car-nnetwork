@@ -13,7 +13,7 @@ def remove_aug(dataset, dataset_file="dataset-aug.csv"):
     .   This removes images created with the mirror_images() function. The function also removes the accompanying CSV
     .   definition file which is by default labelled "dataset-aug.csv"
     .
-    .   @param dataset Folder name of dataset.
+    .   @param dataset      Folder name of dataset.
     .   @param dataset_file Filename of the CSV definition file for the augmented dataset.
     """
 
@@ -36,8 +36,8 @@ def augment(dataset, dataset_def):
     .   mirrors and saves all the new images in the "frames" folder and creates a new augmented dataset definition
     .   dataframe that is returned.
     .
-    .   @param dataset Folder name of dataset.
-    .   @param dataset_def Dataset definition dataframe loaded with utilities.csv_load().
+    .   @param dataset      Folder name of dataset.
+    .   @param dataset_def  Dataset definition dataframe loaded with utilities.csv_load().
     """
 
     data = []

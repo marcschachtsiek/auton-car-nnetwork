@@ -10,7 +10,7 @@ def dataset_load(dataset, filename="dataset-aug.csv"):
     .   Wrapper around read_csv() function from pandas to load a dataset definition file into a dataframe that is
     .   then returned.
     .
-    .   @param dataset Folder name of dataset.
+    .   @param dataset  Folder name of dataset.
     .   @param filename Filename of the CSV file to load.
     """
 
@@ -25,9 +25,9 @@ def dataset_save(dataset, dataset_def, filename="dataset-aug.csv"):
     .   Wrapper around to_csv() function from pandas to save a dataset dataframe into a dataset definition CSV file.
     .   The dataframe is saved without indices.
     .
-    .   @param dataset Folder name of dataset.
-    .   @param dataset_def Dataset dataframe to save.
-    .   @param filename Filename of the CSV file to load.
+    .   @param dataset      Folder name of dataset.
+    .   @param dataset_def  Dataset dataframe to save.
+    .   @param filename     Filename of the CSV file to load.
     """
 
     dataset_def.to_csv(dataset + "\\" + filename, index=False)

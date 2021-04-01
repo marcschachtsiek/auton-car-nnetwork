@@ -25,14 +25,14 @@ def load_data(dataset, dataframe, pre_shuffle=True, shuffle=True, validation_spl
     .   The function load_data() converts the dataset into a training generator and a validation generator and returns
     .   those. They are used in training and prediction function.
     .
-    .   @param dataset Folder name of dataset.
-    .   @param dataframe Dataset definition dataframe.
-    .   @param pre_shuffle Boolean, whether pre-shuffling should be performed.
-    .   @param shuffle Boolean, whether the data should be shuffled between epochs.
-    .   @param batch_size
-    .   @param seed
-    .   @param target_size Image target size (height, width).
-    .   @param validation_split
+    .   @param dataset          Folder name of dataset.
+    .   @param dataframe        Dataset definition dataframe.
+    .   @param pre_shuffle      Boolean, whether pre-shuffling should be performed.
+    .   @param shuffle          Boolean, whether the data should be shuffled between epochs.
+    .   @param batch_size       Batch_size of the generator
+    .   @param seed             Seed value for repeatability
+    .   @param target_size      Image target size (height, width).
+    .   @param validation_split Percentage of full dataset to be used for validation.
     """
 
     if pre_shuffle:
@@ -60,11 +60,11 @@ def model_jnet(crop_top, crop_bottom, crop_left, crop_right, input_shape):
     .   This functions creates a sequential Keras model with the parameters according to the J-Net model by
     .   Kocic et al. (2019). The model is adjusted based off cropping parameters and input shape and returned.
     .
-    .   @param crop_top Amount of pixels cropped from the top of the input image.
-    .   @param crop_bottom Amount of pixels cropped from the bottom of the input image.
-    .   @param crop_left Amount of pixels cropped from the left of the input image.
-    .   @param crop_right Amount of pixels cropped from the right of the input image.
-    .   @param input_shape Tuple input-shape of the image (height, width, depth)
+    .   @param crop_top     Amount of pixels cropped from the top of the input image.
+    .   @param crop_bottom  Amount of pixels cropped from the bottom of the input image.
+    .   @param crop_left    Amount of pixels cropped from the left of the input image.
+    .   @param crop_right   Amount of pixels cropped from the right of the input image.
+    .   @param input_shape  Tuple input-shape of the image (height, width, depth)
     """
 
     model = Sequential()
@@ -90,14 +90,14 @@ def model_jnet(crop_top, crop_bottom, crop_left, crop_right, input_shape):
 
 def compile_model(model, lr):
     """
-    model_jnet(model, lr) -> model
+    compile_model(model, lr) -> model
     .   @brief Compiles a model with the Adam optimiser and the Mean Squared Error loss function.
     .
     .   This function takes a Keras model and compiles it with the Adam optimiser and the Mean Squared Error
     .   loss function. The supplied learning rate is the starting learning rate for the optimiser
     .
-    .   @param model Keras model to be compiled.
-    .   @param lr Initial learning rate for the Adam optimiser.
+    .   @param model    Keras model to be compiled.
+    .   @param lr       Initial learning rate for the Adam optimiser.
     """
 
     model.compile(optimizer=Adam(lr=lr), loss=MeanSquaredError(), metrics=['accuracy'])
@@ -108,7 +108,7 @@ def compile_model(model, lr):
 def fit_model(dataset, model, train_gen, valid_gen, hist_filename='history.csv', epochs=20, max_queue_size=10,
               workers=1, verbose=0):
     """
-    model_jnet(dataset, model, train_gen, valid_gen[, hist_filename, epochs, max_queue_size, workers, verbose])
+    fit_model(dataset, model, train_gen, valid_gen[, hist_filename, epochs, max_queue_size, workers, verbose])
     .   @brief
     .
     .   ####
@@ -177,7 +177,20 @@ def load_history(path, filename="history.csv"):
     return pd.read_csv(path + "\\" + filename)
 
 
-def plot_history(history, out_path, out_filename='history.png', figsize=(5, 3), linewidth=1, ylim=None):
+def plot_history(dataset, history, out_filename='history.png', figsize=(5, 3), linewidth=1, ylim=None):
+    """
+    plot_history(dataset, history[, out_filename, figsize, linewidth, ylim])
+    .   @brief
+    .
+    .   ####
+    .
+    .   @param dataset Folder name of dataset.
+    .   @param history
+    .   @param out_filename
+    .   @param figsize
+    .   @param linewidth
+    .   @param ylim
+    """
 
     # Plot history: MSE -- from https://www.machinecurve.com/index.php/2019/10/08/how-to-visualize-the-training
     # -process-in-keras/#visualizing-the-mse
@@ -192,23 +205,48 @@ def plot_history(history, out_path, out_filename='history.png', figsize=(5, 3), 
     if ylim is not None:
         plt.ylim(0, ylim)
 
-    plt.savefig(out_path + "\\" + out_filename, dpi=1200, bbox_inches="tight")
+    plt.savefig(dataset + "\\" + out_filename, dpi=1200, bbox_inches="tight")
     plt.show()
 
 
-def load_model(path, filename):
-    return keras.models.load_model(path + "\\" + filename)
+def load_model(dataset, model_name):
+    """
+    plot_history(dataset, model_name)
+    .   @brief Loads and returns Keras model.
+    .
+    .   Loads keras model from file and returns the model variable.
+    .
+    .   @param dataset      Folder name of dataset.
+    .   @param model_name   String, name of the model file/folder.
+    """
+
+    return keras.models.load_model(dataset + "\\" + model_name)
 
 
 def load_best_model(path):
     return False
 
 
-def get_predictions(model, sample_path, csv_file, target_size, percentage=0.01, seed=42, batch_size=64):
-    dataframe = pd.read_csv(sample_path + "\\" + csv_file)
+def get_predictions(dataset, model, dataset_def, target_size, percentage=0.01, seed=42, batch_size=64):
+    """
+    get_predictions(dataset, model, dataset_def, target_size[, percentage, seed, batch_size])
+                -> predictions, labels, filenames
+    .   @brief
+    .
+    .   ####
+    .
+    .   @param dataset      Folder name of dataset.
+    .   @param model        Keras model file.
+    .   @param dataset_def  Dataset definition dataframe.
+    .   @param target_size  Image target size (height, width).
+    .   @param percentage   Percentage of full dataset to be predicted [0, 1).
+    .   @param seed         Seed value for repeatability.
+    .   @param batch_size   Batch_size of the generator.
+    """
+
 
     datagen = ImageDataGenerator(validation_split=percentage)
-    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=sample_path + "\\frames",
+    valid_generator = datagen.flow_from_dataframe(dataframe=dataset_def, directory=dataset + "\\frames",
                                                   validate_filenames=False, x_col='filename', y_col='angle',
                                                   class_mode="raw", seed=seed, target_size=target_size,
                                                   subset="validation", batch_size=batch_size, shuffle=False)
@@ -266,11 +304,21 @@ def plot_mse(preds_list, labels, x_vals, extra_vals, extra_txt, out_path, out_fi
     plt.show()
 
 
-def convert_to_tflite(path, filename):
-    model = load_model(path, filename)
+def convert_to_tflite(dataset, model_name):
+    """
+    convert_to_tflite(dataset, model_name)
+    .   @brief Loads a model and converts it to a TensorFlow Lite model.
+    .
+    .   Loads a Keras model from a file and uses the TFLiteConverter to convert it to a TensorFlow Lite .tflite file.
+    .
+    .   @param dataset      Folder name of dataset.
+    .   @param model_name   String, name of the model file/folder.
+    """
+
+    model = load_model(dataset, model_name)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     tflite_model = converter.convert()
 
     # Save the model.
-    with open(path + filename + '.tflite', 'wb') as f:
+    with open(dataset + "\\" + model_name + '.tflite', 'wb') as f:
         f.write(tflite_model)
