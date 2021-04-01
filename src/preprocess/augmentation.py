@@ -4,9 +4,9 @@ import pandas as pd
 import cv2
 
 
-def remove(dataset, dataset_file="dataset-aug.csv"):
+def remove_aug(dataset, dataset_file="dataset-aug.csv"):
     """
-    remove([dataset_file])
+    remove_aug([dataset_file])
     .   @brief Removes augmented images from a dataset.
     .
     .   The function remove(), removes all files starting with "m-" from the folder "frames" in the dataset directory.

@@ -1,13 +1,8 @@
-import os
-
 import numpy as np
 from sklearn.metrics import mean_squared_error
 import tensorflow as tf
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
-
 import keras
-from tensorflow.python.keras.layers import Resizing
 from keras import Model
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Cropping2D, Lambda
@@ -20,19 +15,36 @@ import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 
 
-def load_data(dataframe, pre_shuffle=False, shuffle=True, batch_size=32, seed=42,
+def load_data(dataset, dataframe, pre_shuffle=True, shuffle=True, validation_split=0.2, batch_size=32, seed=42,
               target_size=(240, 320)):
+    """
+    load_data(dataset, dataframe[, pre_shuffle, shuffle, batch_size, seed, target_size])
+                -> train_generator, valid_generator
+    .   @brief Splits the dataset into a train and validation generator used for training and validation.
+    .
+    .   The function load_data() converts the dataset into a training generator and a validation generator and returns
+    .   those. They are used in training and prediction function.
+    .
+    .   @param dataset Folder name of dataset.
+    .   @param dataframe Dataset definition dataframe.
+    .   @param pre_shuffle Boolean, whether pre-shuffling should be performed.
+    .   @param shuffle Boolean, whether the data should be shuffled between epochs.
+    .   @param batch_size
+    .   @param seed
+    .   @param target_size Image target size (height, width).
+    .   @param validation_split
+    """
 
     if pre_shuffle:
         dataframe = dataframe.sample(frac=1).reset_index(drop=True)
 
-    datagen = ImageDataGenerator(validation_split=0.2)
-    train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory="frames",
+    datagen = ImageDataGenerator(validation_split=validation_split)
+    train_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=dataset + "\\frames",
                                                   validate_filenames=False, x_col='filename', y_col='angle',
                                                   class_mode="raw", seed=seed, target_size=target_size,
                                                   subset="training", batch_size=batch_size, shuffle=shuffle)
 
-    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory="frames",
+    valid_generator = datagen.flow_from_dataframe(dataframe=dataframe, directory=dataset + "\\frames",
                                                   validate_filenames=False, x_col='filename', y_col='angle',
                                                   class_mode="raw", seed=seed, target_size=target_size,
                                                   subset="validation", batch_size=batch_size, shuffle=True)
@@ -41,6 +53,20 @@ def load_data(dataframe, pre_shuffle=False, shuffle=True, batch_size=32, seed=42
 
 
 def model_jnet(crop_top, crop_bottom, crop_left, crop_right, input_shape):
+    """
+    model_jnet(crop_top, crop_bottom, crop_left, crop_right, input_shape) -> model
+    .   @brief Returns a J-Net Keras model with custom cropping and input-shape.
+    .
+    .   This functions creates a sequential Keras model with the parameters according to the J-Net model by
+    .   Kocic et al. (2019). The model is adjusted based off cropping parameters and input shape and returned.
+    .
+    .   @param crop_top Amount of pixels cropped from the top of the input image.
+    .   @param crop_bottom Amount of pixels cropped from the bottom of the input image.
+    .   @param crop_left Amount of pixels cropped from the left of the input image.
+    .   @param crop_right Amount of pixels cropped from the right of the input image.
+    .   @param input_shape Tuple input-shape of the image (height, width, depth)
+    """
+
     model = Sequential()
 
     model.add(Cropping2D(cropping=((crop_top, crop_bottom), (crop_left, crop_right)), input_shape=input_shape))
@@ -62,17 +88,43 @@ def model_jnet(crop_top, crop_bottom, crop_left, crop_right, input_shape):
     return model
 
 
-
 def compile_model(model, lr):
+    """
+    model_jnet(model, lr) -> model
+    .   @brief Compiles a model with the Adam optimiser and the Mean Squared Error loss function.
+    .
+    .   This function takes a Keras model and compiles it with the Adam optimiser and the Mean Squared Error
+    .   loss function. The supplied learning rate is the starting learning rate for the optimiser
+    .
+    .   @param model Keras model to be compiled.
+    .   @param lr Initial learning rate for the Adam optimiser.
+    """
+
     model.compile(optimizer=Adam(lr=lr), loss=MeanSquaredError(), metrics=['accuracy'])
     print(model.summary())
     return model
 
 
-def fit_model(model, train_gen, valid_gen, data_path, history_filename='history.csv', epochs=20, max_queue_size=10,
-              workers=1, model_format='', verbose=0):
+def fit_model(dataset, model, train_gen, valid_gen, hist_filename='history.csv', epochs=20, max_queue_size=10,
+              workers=1, verbose=0):
+    """
+    model_jnet(dataset, model, train_gen, valid_gen[, hist_filename, epochs, max_queue_size, workers, verbose])
+    .   @brief
+    .
+    .   ####
+    .
+    .   @param dataset
+    .   @param model
+    .   @param train_gen
+    .   @param valid_gen
+    .   @param hist_filename
+    .   @param epochs
+    .   @param max_queue_size
+    .   @param workers
+    .   @param verbose
+    """
 
-    checkpoint = ModelCheckpoint(data_path + "\\" + 'model-{epoch:03d}-{val_loss:.3f}' + model_format,
+    checkpoint = ModelCheckpoint(dataset + "\\" + 'model-{epoch:03d}-{val_loss:.3f}',
                                  monitor='val_loss', verbose=0, save_best_only=True, mode='auto')
 
     step_size_train = train_gen.n // train_gen.batch_size
@@ -82,8 +134,7 @@ def fit_model(model, train_gen, valid_gen, data_path, history_filename='history.
                         validation_data=valid_gen, validation_steps=step_size_valid, epochs=epochs,
                         max_queue_size=max_queue_size, workers=workers, verbose=verbose)
 
-    df = pd.DataFrame(history.history)
-    df.to_csv(data_path + "\\" + history_filename, index=False)
+    pd.DataFrame(history.history).to_csv(dataset + "\\" + hist_filename, index=False)
 
 
 def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes, data_path):

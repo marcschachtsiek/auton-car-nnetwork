@@ -31,17 +31,3 @@ def dataset_save(dataset, dataset_def, filename="dataset-aug.csv"):
     """
 
     dataset_def.to_csv(dataset + "\\" + filename, index=False)
-
-
-def set_dir(directory):
-    """
-    set_dataset_dir(dataset_dir)
-    .   @brief Sets the current directory.
-    .
-    .   Wrapper around os.chdir() function to set a base location of the folder containing the datasets. Used as the
-    .   relative starting directory for all functions.
-    .
-    .   @param directory Directory containing the datasets.
-    """
-
-    os.chdir(directory)
