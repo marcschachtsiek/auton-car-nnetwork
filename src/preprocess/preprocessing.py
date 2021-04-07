@@ -1,8 +1,82 @@
 import os
+import random
+
+import cv2 as cv
 import pandas as pd
 
 
-def create_dataset(dataset, angles_file, steering_offset=-9, min_angle=30, max_angle=120):
+def blur_dataset(dataset, blurred_folder, dataset_def, sigma=1, kernel=(0, 0)):
+    """
+    apply_blur(dataset, blurred_folder, dataset_def[, sigma, kernel]) -> dataframe
+    .   @brief
+    .
+    .   ####
+    .
+    .   @param dataset
+    .   @param blurred_folder
+    .   @param dataset_def
+    .   @param sigma
+    .   @param kernel
+    """
+
+    os.makedirs(os.getcwd() + "\\" + blurred_folder + "\\frames")
+
+    def blur(row):
+        filename = row["filename"]
+        img = cv.imread(dataset + "\\frames\\" + filename)
+        img_blur = cv.GaussianBlur(img, kernel, sigma)
+        cv.imwrite(blurred_folder + "\\frames\\" + filename, img_blur)
+
+    dataset_def.apply(blur, axis=1)
+
+    return dataset_def.copy()
+
+
+def mix_datasets(dataset_1, dataset_2, mixed_folder, dataset_def, percentage):
+    """
+    mixed_dataset(dataset_1, dataset_2, mixed_folder, dataset_def, percentage) -> dataframe
+    .   @brief
+    .
+    .   ####
+    .
+    .   @param dataset_1
+    .   @param dataset_2
+    .   @param mixed_folder
+    .   @param dataset_def
+    .   @param percentage
+    """
+
+    os.makedirs(os.getcwd() + "\\" + mixed_folder + "\\frames")
+
+    length = len(dataset_def)
+    samples = random.sample(range(0, length), round(percentage * length))
+
+    data = []
+
+    def select(row):
+        idx = row.name
+        filename = row["filename"]
+
+        if idx in samples:
+            img = cv.imread(dataset_1 + "\\frames\\" + filename)
+            # prefix = "d1_"
+        else:
+            img = cv.imread(dataset_2 + "\\frames\\" + filename)
+            # prefix = "d2_"
+
+        # cv.imwrite(mixed_folder + "\\frames\\" + prefix + filename, img)
+        cv.imwrite(mixed_folder + "\\frames\\" + filename, img)
+        # data.append([prefix + filename, row['angle']])
+        data.append([filename, row['angle']])
+
+    dataset_def.apply(select, axis=1)
+
+    final_df = pd.DataFrame(data, columns=["filename", "angle"])
+
+    return final_df
+
+
+def create_dataset(dataset, angles_file, steering_offset=-9, min_angle=30, max_angle=150):
     """
     create_dataset(angles_file[, steering_offset, min_angle, max_angle]) -> dataframe
     .   @brief Creates a dataset definition from raw recorded steering angle and image data with timestamps.
@@ -19,7 +93,7 @@ def create_dataset(dataset, angles_file, steering_offset=-9, min_angle=30, max_a
     """
 
     angels_df = pd.read_csv(dataset + "\\" + angles_file)
-    image_df = read_images(os.listdir(dataset + "\\frames"))
+    image_df = _read_images(os.listdir(dataset + "\\frames"))
 
     angle_arr = []
 
@@ -56,7 +130,7 @@ def create_dataset(dataset, angles_file, steering_offset=-9, min_angle=30, max_a
     return final_df
 
 
-def read_images(filename_array):
+def _read_images(filename_array):
     df = pd.DataFrame(columns=['filename', 'hour', 'minute', 'second', 'microsec'])
     df['filename'] = filename_array
 

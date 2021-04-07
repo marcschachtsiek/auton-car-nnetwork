@@ -15,7 +15,7 @@ import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 
 
-def load_data(dataset, dataframe, pre_shuffle=True, shuffle=True, validation_split=0.2, batch_size=32, seed=42,
+def load_data(dataset, dataframe, pre_shuffle=True, shuffle=True, validation_split=0.2, batch_size=64, seed=42,
               target_size=(240, 320)):
     """
     load_data(dataset, dataframe[, pre_shuffle, shuffle, batch_size, seed, target_size])
@@ -105,7 +105,7 @@ def compile_model(model, lr):
     return model
 
 
-def fit_model(dataset, model, train_gen, valid_gen, hist_filename='history.csv', epochs=20, max_queue_size=10,
+def fit_model(dataset, name, model, train_gen, valid_gen, hist_filename='history.csv', epochs=20, max_queue_size=10,
               workers=1, verbose=0):
     """
     fit_model(dataset, model, train_gen, valid_gen[, hist_filename, epochs, max_queue_size, workers, verbose])
@@ -124,7 +124,7 @@ def fit_model(dataset, model, train_gen, valid_gen, hist_filename='history.csv',
     .   @param verbose
     """
 
-    checkpoint = ModelCheckpoint(dataset + "\\" + 'model-{epoch:03d}-{val_loss:.3f}',
+    checkpoint = ModelCheckpoint(dataset + "\\" + name + "\\" + 'model-{epoch:03d}-{val_loss:.3f}',
                                  monitor='val_loss', verbose=0, save_best_only=True, mode='auto')
 
     step_size_train = train_gen.n // train_gen.batch_size
@@ -134,7 +134,7 @@ def fit_model(dataset, model, train_gen, valid_gen, hist_filename='history.csv',
                         validation_data=valid_gen, validation_steps=step_size_valid, epochs=epochs,
                         max_queue_size=max_queue_size, workers=workers, verbose=verbose)
 
-    pd.DataFrame(history.history).to_csv(dataset + "\\" + hist_filename, index=False)
+    pd.DataFrame(history.history).to_csv(dataset + "\\" + name + "\\" + hist_filename, index=False)
 
 
 def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes, data_path):
@@ -209,7 +209,7 @@ def plot_history(dataset, history, out_filename='history.png', figsize=(5, 3), l
     plt.show()
 
 
-def load_model(dataset, model_name):
+def load_model(dataset, name, model_name):
     """
     plot_history(dataset, model_name)
     .   @brief Loads and returns Keras model.
@@ -220,10 +220,12 @@ def load_model(dataset, model_name):
     .   @param model_name   String, name of the model file/folder.
     """
 
-    return keras.models.load_model(dataset + "\\" + model_name)
+    return keras.models.load_model(dataset + "\\" + name + "\\" + model_name)
 
 
-def load_best_model(path):
+def load_best_model(dataset):
+
+
     return False
 
 
@@ -244,7 +246,6 @@ def get_predictions(dataset, model, dataset_def, target_size, percentage=0.01, s
     .   @param batch_size   Batch_size of the generator.
     """
 
-
     datagen = ImageDataGenerator(validation_split=percentage)
     valid_generator = datagen.flow_from_dataframe(dataframe=dataset_def, directory=dataset + "\\frames",
                                                   validate_filenames=False, x_col='filename', y_col='angle',
@@ -260,8 +261,24 @@ def get_predictions(dataset, model, dataset_def, target_size, percentage=0.01, s
     return y_pred_a, labels, filenames
 
 
-def plot_predictions(preds_list, plot_labels, labels, out_path, out_filename='predictions.png', figsize=(5, 3),
+def plot_predictions(folder, preds_list, plot_labels, labels, out_filename='predictions.png', figsize=(5, 3),
                      linewidth=1, fontsize='small', title='Predicted vs Ground Truth Steering Angle Values'):
+    """
+    plot_predictions(dataset, preds_list, plot_labels, labels[, out_filename, figsize, linewidth, fontsize, title])
+    .   @brief
+    .
+    .   ####
+    .
+    .   @param dataset
+    .   @param preds_list
+    .   @param plot_labels
+    .   @param labels
+    .   @param out_filename
+    .   @param figsize
+    .   @param linewidth
+    .   @param fontsize
+    .   @param title
+    """
 
     if type(preds_list[0]) is not list:
         preds_list = [preds_list]
@@ -270,7 +287,7 @@ def plot_predictions(preds_list, plot_labels, labels, out_path, out_filename='pr
         plot_labels = [plot_labels]
 
     plt.figure(figsize=figsize)
-    plt.plot(labels, label='Measured', linewidth=linewidth, zorder=5)
+    plt.plot(labels, label='Ground Truth', linewidth=linewidth, zorder=5)
 
     for preds, label in zip(preds_list, plot_labels):
         plt.plot(preds, label=label, linewidth=linewidth, zorder=1)
@@ -279,7 +296,7 @@ def plot_predictions(preds_list, plot_labels, labels, out_path, out_filename='pr
     plt.ylabel('Normalised Steering Angle Value')
     plt.xlabel('Sample')
     plt.legend(loc="upper left", fontsize=fontsize)
-    plt.savefig(out_path + "\\" + out_filename, dpi=1200, bbox_inches="tight")
+    plt.savefig(folder + "\\" + out_filename, dpi=1200, bbox_inches="tight")
     plt.show()
 
 
@@ -304,7 +321,7 @@ def plot_mse(preds_list, labels, x_vals, extra_vals, extra_txt, out_path, out_fi
     plt.show()
 
 
-def convert_to_tflite(dataset, model_name):
+def convert_to_tflite(dataset, name, model_name):
     """
     convert_to_tflite(dataset, model_name)
     .   @brief Loads a model and converts it to a TensorFlow Lite model.
@@ -315,7 +332,7 @@ def convert_to_tflite(dataset, model_name):
     .   @param model_name   String, name of the model file/folder.
     """
 
-    model = load_model(dataset, model_name)
+    model = load_model(dataset, name, model_name)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     tflite_model = converter.convert()
 
