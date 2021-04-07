@@ -233,9 +233,10 @@ def get_predictions(dataset, model, dataset_def, target_size, percentage=0.01, s
     """
     get_predictions(dataset, model, dataset_def, target_size[, percentage, seed, batch_size])
                 -> predictions, labels, filenames
-    .   @brief
+    .   @brief Uses a trained model to predict outputs of a dataset.
     .
-    .   ####
+    .   A trained model is used to predict outputs of the last <percentage> of the full dataset given the dataset
+    .   definition dataframe. Seed and batch_size of the generator can be specified for repeatability.
     .
     .   @param dataset      Folder name of dataset.
     .   @param model        Keras model file.
@@ -265,19 +266,20 @@ def plot_predictions(folder, preds_list, plot_labels, labels, out_filename='pred
                      linewidth=1, fontsize='small', title='Predicted vs Ground Truth Steering Angle Values'):
     """
     plot_predictions(dataset, preds_list, plot_labels, labels[, out_filename, figsize, linewidth, fontsize, title])
-    .   @brief
+    .   @brief Creates a predictions vs labels graph.
     .
-    .   ####
+    .   This function plots the predictions generated with get_predictions() with a specific filename, figure size,
+    .   linewidth, fontsize and title.
     .
-    .   @param dataset
-    .   @param preds_list
-    .   @param plot_labels
-    .   @param labels
-    .   @param out_filename
-    .   @param figsize
-    .   @param linewidth
-    .   @param fontsize
-    .   @param title
+    .   @param dataset      Dataset folder to save figure image into.
+    .   @param preds_list   List of predictions or list of multiple prediction lists.
+    .   @param plot_labels  List of plot labels for each prediction list.
+    .   @param labels       Ground truth values.
+    .   @param out_filename Output filename.
+    .   @param figsize      Output size of the figure.
+    .   @param linewidth    Linewidth of the graph lines.
+    .   @param fontsize     Fontsize of the legend.
+    .   @param title        Graph title.
     """
 
     if type(preds_list[0]) is not list:

@@ -8,15 +8,17 @@ import pandas as pd
 def blur_dataset(dataset, blurred_folder, dataset_def, sigma=1, kernel=(0, 0)):
     """
     apply_blur(dataset, blurred_folder, dataset_def[, sigma, kernel]) -> dataframe
-    .   @brief
+    .   @brief Creates a Gaussian blurred version of the dataset.
     .
-    .   ####
+    .   Load every image from dataset and creates a blurred version with a Gaussian Blur with specified sigma and kernel
+    .   size. Setting either sigma to 0 or kernel to (0, 0) will result in the other value being automatically
+    .   calculated.
     .
-    .   @param dataset
-    .   @param blurred_folder
-    .   @param dataset_def
-    .   @param sigma
-    .   @param kernel
+    .   @param dataset          Original dataset folder.
+    .   @param blurred_folder   Folder for the blurred dataset.
+    .   @param dataset_def      Dataset definition file.
+    .   @param sigma            Standard deviation of the Gaussian Blur.
+    .   @param kernel           Kernel size with (width, height).
     """
 
     os.makedirs(os.getcwd() + "\\" + blurred_folder + "\\frames")
@@ -35,15 +37,16 @@ def blur_dataset(dataset, blurred_folder, dataset_def, sigma=1, kernel=(0, 0)):
 def mix_datasets(dataset_1, dataset_2, mixed_folder, dataset_def, percentage):
     """
     mixed_dataset(dataset_1, dataset_2, mixed_folder, dataset_def, percentage) -> dataframe
-    .   @brief
+    .   @brief Creates a mixed dataset consisting of <percentage> dataset_1 and (1-<percentage>) dataset_2
     .
-    .   ####
+    .   Takes a list of images from the dataset definition file and pick <percentage> of the entire set from the first
+    .   dataset. The other images are taken from the second dataset and a new dataset definition dataframe is returned.
     .
-    .   @param dataset_1
-    .   @param dataset_2
-    .   @param mixed_folder
-    .   @param dataset_def
-    .   @param percentage
+    .   @param dataset_1    Folder of first dataset for mixing.
+    .   @param dataset_2    Folder of second dataset for mixing.
+    .   @param mixed_folder Folder of mixed dataset.
+    .   @param dataset_def  Dataset definition file.
+    .   @param percentage   Mixing percentage of first dataset.
     """
 
     os.makedirs(os.getcwd() + "\\" + mixed_folder + "\\frames")
@@ -59,14 +62,10 @@ def mix_datasets(dataset_1, dataset_2, mixed_folder, dataset_def, percentage):
 
         if idx in samples:
             img = cv.imread(dataset_1 + "\\frames\\" + filename)
-            # prefix = "d1_"
         else:
             img = cv.imread(dataset_2 + "\\frames\\" + filename)
-            # prefix = "d2_"
 
-        # cv.imwrite(mixed_folder + "\\frames\\" + prefix + filename, img)
         cv.imwrite(mixed_folder + "\\frames\\" + filename, img)
-        # data.append([prefix + filename, row['angle']])
         data.append([filename, row['angle']])
 
     dataset_def.apply(select, axis=1)
@@ -82,14 +81,14 @@ def create_dataset(dataset, angles_file, steering_offset=-9, min_angle=30, max_a
     .   @brief Creates a dataset definition from raw recorded steering angle and image data with timestamps.
     .
     .   The create_dataset() function generates the dataset definition dataframe and returns it. It reads the original
-    .   angles file, performs timestamp matching of recorded frames and steering angles and noramlises the angle data.
+    .   angles file, performs timestamp matching of recorded frames and steering angles and normalises the angle data.
     .
     .   @param dataset          Folder name of dataset.
     .   @param angles_file      Filename of the file containing the angles and timestamps.
     .   @param output_file      Output filename for the dataset definition CSV file.
     .   @param steering_offset  Steering offset of the recorded dataset.
     .   @param min_angle        Minimum steering angle, used for normalisation.
-    .   @param max_angle        Maximum steering angle, used for normalisation
+    .   @param max_angle        Maximum steering angle, used for normalisation.
     """
 
     angels_df = pd.read_csv(dataset + "\\" + angles_file)
