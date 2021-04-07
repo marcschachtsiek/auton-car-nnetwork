@@ -109,19 +109,21 @@ def fit_model(dataset, name, model, train_gen, valid_gen, hist_filename='history
               workers=1, verbose=0):
     """
     fit_model(dataset, model, train_gen, valid_gen[, hist_filename, epochs, max_queue_size, workers, verbose])
-    .   @brief
+    .   @brief Trains a neural network model with a model checkpoint.
     .
-    .   ####
+    .   Trains a deep neural network model on the training dataset contained in the training generator. The validation
+    .   generator is used to validate the results every epoch. Training is performed over <epochs> epochs and the model
+    .   is saved with every validation loss improvement. The training history is saved to a CSV file.
     .
-    .   @param dataset
-    .   @param model
-    .   @param train_gen
-    .   @param valid_gen
-    .   @param hist_filename
-    .   @param epochs
-    .   @param max_queue_size
-    .   @param workers
-    .   @param verbose
+    .   @param dataset          Folder name of dataset.
+    .   @param model            Keras model.
+    .   @param train_gen        Training Generator with training dataset.
+    .   @param valid_gen        Validation Generator with validation dataset.
+    .   @param hist_filename    Filename of histroy file for saving.
+    .   @param epochs           Number of training epochs.
+    .   @param max_queue_size   Maximum queue size.
+    .   @param workers          Number of workers.
+    .   @param verbose          1 or 0 for output prints or not.
     """
 
     checkpoint = ModelCheckpoint(dataset + "\\" + name + "\\" + 'model-{epoch:03d}-{val_loss:.3f}',
@@ -137,7 +139,7 @@ def fit_model(dataset, name, model, train_gen, valid_gen, hist_filename='history
     pd.DataFrame(history.history).to_csv(dataset + "\\" + name + "\\" + hist_filename, index=False)
 
 
-def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes, data_path):
+def _plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes, data_path):
     model = keras.models.load_model(data_path + folder + model_file)
 
     # https://machinelearningmastery.com/how-to-visualize-filters-and-feature-maps-in-convolutional-neural-networks/
@@ -173,23 +175,33 @@ def plot_feature_maps(folder, model_file, img_filename, ixs, plot_sq, figsizes, 
         plt.show()
 
 
-def load_history(path, filename="history.csv"):
-    return pd.read_csv(path + "\\" + filename)
+def load_history(dataset, filename="history.csv"):
+    """
+    load_history(path[, filename]) -> dataframe
+    .   @brief Loads a training history file.
+    .
+    .   Loads a training history file called <filename> into a pandas dataframe.
+    .
+    .   @param dataset      Folder name of dataset.
+    .   @param filename     Filename of the history file.
+    """
+
+    return pd.read_csv(dataset + "\\" + filename)
 
 
 def plot_history(dataset, history, out_filename='history.png', figsize=(5, 3), linewidth=1, ylim=None):
     """
     plot_history(dataset, history[, out_filename, figsize, linewidth, ylim])
-    .   @brief
+    .   @brief Plots the history training graph.
     .
-    .   ####
+    .   Plots the history from the fit() function and saves it into the dataset folder.
     .
-    .   @param dataset Folder name of dataset.
-    .   @param history
-    .   @param out_filename
-    .   @param figsize
-    .   @param linewidth
-    .   @param ylim
+    .   @param dataset      Folder name of dataset.
+    .   @param history      History file from the fit() function.
+    .   @param out_filename Output filename.
+    .   @param figsize      Figure size.
+    .   @param linewidth    Linewidth of the plot.
+    .   @param ylim         Limits of the Y-Axis.
     """
 
     # Plot history: MSE -- from https://www.machinecurve.com/index.php/2019/10/08/how-to-visualize-the-training
@@ -211,20 +223,29 @@ def plot_history(dataset, history, out_filename='history.png', figsize=(5, 3), l
 
 def load_model(dataset, name, model_name):
     """
-    plot_history(dataset, model_name)
+    load_model(dataset, name, model_name) -> model
     .   @brief Loads and returns Keras model.
     .
     .   Loads keras model from file and returns the model variable.
     .
     .   @param dataset      Folder name of dataset.
+    .   @param name         Folder name of training folder.
     .   @param model_name   String, name of the model file/folder.
     """
 
     return keras.models.load_model(dataset + "\\" + name + "\\" + model_name)
 
 
-def load_best_model(dataset):
-
+def load_best_model(dataset, name):
+    """
+    load_best_model(dataset, name) -> model
+    .   @brief Loads and returns the best Keras model.
+    .
+    .   Loads best keras model file and returns the model variable.
+    .
+    .   @param dataset      Folder name of dataset.
+    .   @param name         Folder name of training folder.
+    """
 
     return False
 
@@ -239,7 +260,7 @@ def get_predictions(dataset, model, dataset_def, target_size, percentage=0.01, s
     .   definition dataframe. Seed and batch_size of the generator can be specified for repeatability.
     .
     .   @param dataset      Folder name of dataset.
-    .   @param model        Keras model file.
+    .   @param model        Keras model.
     .   @param dataset_def  Dataset definition dataframe.
     .   @param target_size  Image target size (height, width).
     .   @param percentage   Percentage of full dataset to be predicted [0, 1).
@@ -302,7 +323,7 @@ def plot_predictions(folder, preds_list, plot_labels, labels, out_filename='pred
     plt.show()
 
 
-def plot_mse(preds_list, labels, x_vals, extra_vals, extra_txt, out_path, out_filename='mse_graph.png', figsize=(5, 3),
+def _plot_mse(preds_list, labels, x_vals, extra_vals, extra_txt, out_path, out_filename='mse_graph.png', figsize=(5, 3),
              linewidth=1, fontsize='small', title='Predicted vs Ground Truth Steering Angle Values'):
 
     if type(preds_list[0]) is not list:
